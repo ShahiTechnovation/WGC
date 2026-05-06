@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { PARTNERS, PARTNER_BENEFITS } from '@/lib/constants'
+import { PARTNERS, PARTNER_BENEFITS, type Partner } from '@/lib/constants'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 16 },
@@ -10,11 +10,17 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.5, delay },
 })
 
-export function PartnerSection({ hideHeader = false }: { hideHeader?: boolean }) {
-  const titlePartners = PARTNERS.filter(p => p.tier === 'title')
-  const orgPartners   = PARTNERS.filter(p => p.tier === 'org')
-  const mediaPartners = PARTNERS.filter(p => p.tier === 'media')
-  const communityPartners = PARTNERS.filter(p => p.tier === 'community')
+export function PartnerSection({
+  hideHeader = false,
+  partners = PARTNERS as Partner[],
+}: {
+  hideHeader?: boolean
+  partners?: Partner[]
+}) {
+  const titlePartners     = partners.filter(p => p.tier === 'title')
+  const orgPartners       = partners.filter(p => p.tier === 'org')
+  const mediaPartners     = partners.filter(p => p.tier === 'media')
+  const communityPartners = partners.filter(p => p.tier === 'community')
 
   return (
     <section className="wgc-section bg-bg-void" id="partners" style={{ borderTop: '1px solid var(--bg-border)' }}>

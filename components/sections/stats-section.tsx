@@ -2,8 +2,16 @@
 
 import { useCountUp } from '@/hooks/use-count-up'
 import { STATS_BAR } from '@/lib/constants'
+import type { WGCStat } from '@/lib/airtable'
 
-function StatItem({ label, value, suffix, prefix }: typeof STATS_BAR[number]) {
+type StatShape = {
+  label: string
+  value: number
+  suffix: string
+  prefix: string
+}
+
+function StatItem({ label, value, suffix, prefix }: StatShape) {
   const { ref, formatted } = useCountUp(value, 1500, prefix, suffix)
 
   return (
@@ -18,12 +26,23 @@ function StatItem({ label, value, suffix, prefix }: typeof STATS_BAR[number]) {
   )
 }
 
-export function StatsSection() {
+function toStatShape(s: WGCStat | typeof STATS_BAR[number]): StatShape {
+  return {
+    label:  s.label,
+    value:  s.value,
+    suffix: s.suffix,
+    prefix: s.prefix,
+  }
+}
+
+export function StatsSection({ stats }: { stats?: (WGCStat | typeof STATS_BAR[number])[] }) {
+  const data = (stats ?? STATS_BAR).map(toStatShape)
+
   return (
     <section className="w-full bg-bg-surface border-t border-b border-bg-border overflow-hidden" id="stats">
-      {/* Desktop: 5-column with dividers */}
-      <div className="hidden sm:grid grid-cols-5">
-        {STATS_BAR.map((stat, i) => (
+      {/* Desktop: columns with dividers */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.length}, 1fr)` }} className="hidden sm:grid">
+        {data.map((stat, i) => (
           <div key={stat.label} className={i > 0 ? 'border-l border-bg-border' : ''}>
             <StatItem {...stat} />
           </div>
@@ -33,7 +52,7 @@ export function StatsSection() {
       {/* Mobile: 2×2 + centered last */}
       <div className="sm:hidden">
         <div className="grid grid-cols-2">
-          {STATS_BAR.slice(0, 4).map((stat, i) => (
+          {data.slice(0, 4).map((stat, i) => (
             <div
               key={stat.label}
               className={[
@@ -45,9 +64,11 @@ export function StatsSection() {
             </div>
           ))}
         </div>
-        <div className="border-t border-bg-border">
-          <StatItem {...STATS_BAR[4]} />
-        </div>
+        {data[4] && (
+          <div className="border-t border-bg-border">
+            <StatItem {...data[4]} />
+          </div>
+        )}
       </div>
     </section>
   )

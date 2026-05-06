@@ -10,7 +10,7 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay },
 })
 
-export function FinaleCTASection() {
+export function FinaleCTASection({ stats: _stats }: { stats?: unknown[] } = {}) {
   return (
     <section
       id="finale-cta"

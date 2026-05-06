@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { EVENTS_ROADMAP, type WGCEvent } from '@/lib/constants'
 import Link from 'next/link'
 
+export type { WGCEvent }
+
 function StatusBadge({ status }: { status: string }) {
   const isConfirmed = status === 'CONFIRMED'
   return (
@@ -179,10 +181,10 @@ function EventCard({ event, index }: { event: WGCEvent; index: number }) {
   )
 }
 
-export function EventsSection() {
-  const months = Array.from(new Set(EVENTS_ROADMAP.map(e => e.month)))
-  const totalEvents = EVENTS_ROADMAP.length
-  const totalCities = new Set(EVENTS_ROADMAP.map(e => e.city)).size
+export function EventsSection({ events = EVENTS_ROADMAP }: { events?: WGCEvent[] }) {
+  const months = Array.from(new Set(events.map(e => e.month)))
+  const totalEvents = events.length
+  const totalCities = new Set(events.map(e => e.city)).size
 
   return (
     <section
@@ -216,7 +218,7 @@ export function EventsSection() {
         {/* Events by month */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
           {months.map(month => {
-            const monthEvents = EVENTS_ROADMAP.filter(e => e.month === month)
+            const monthEvents = events.filter(e => e.month === month)
             const nonFlagship = monthEvents.filter(e => !e.flagship)
             const flagship = monthEvents.find(e => e.flagship)
 

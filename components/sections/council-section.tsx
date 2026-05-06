@@ -2,12 +2,14 @@
 
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { COUNCIL_MEMBERS, WGC_DIVISIONS } from '@/lib/constants'
+import { COUNCIL_MEMBERS, WGC_DIVISIONS, type CouncilMember } from '@/lib/constants'
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 
-function MemberCard({ member, index }: { member: typeof COUNCIL_MEMBERS[number]; index: number }) {
+type Division = typeof WGC_DIVISIONS[number]
+
+function MemberCard({ member, index }: { member: CouncilMember; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -162,7 +164,15 @@ function DivisionRow({ division, index }: { division: typeof WGC_DIVISIONS[numbe
   )
 }
 
-export function CouncilSection({ hideHeader = false }: { hideHeader?: boolean }) {
+export function CouncilSection({
+  hideHeader = false,
+  members = COUNCIL_MEMBERS as CouncilMember[],
+  divisions = WGC_DIVISIONS as Division[],
+}: {
+  hideHeader?: boolean
+  members?: CouncilMember[]
+  divisions?: Division[]
+}) {
   return (
     <section
       className="wgc-section bg-bg-void"
@@ -196,14 +206,14 @@ export function CouncilSection({ hideHeader = false }: { hideHeader?: boolean })
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--lime)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
             >
-              View All {COUNCIL_MEMBERS.length} Members →
+              View All {members.length} Members →
             </a>
           </motion.div>
         )}
 
         {/* ── Members Grid ───────────────────────────────── */}
         <div style={{ marginBottom: '48px', borderTop: '1px solid var(--bg-border)' }}>
-          {COUNCIL_MEMBERS.map((member, i) => (
+          {members.map((member, i) => (
             <MemberCard key={member.id} member={member} index={i} />
           ))}
         </div>
@@ -217,7 +227,7 @@ export function CouncilSection({ hideHeader = false }: { hideHeader?: boolean })
         >
           <span className="label-section accent" style={{ marginBottom: '20px' }}>WGC DIVISIONS</span>
           <div style={{ borderTop: '1px solid var(--bg-border)' }}>
-            {WGC_DIVISIONS.map((div, i) => (
+            {divisions.map((div, i) => (
               <DivisionRow key={div.number} division={div} index={i} />
             ))}
           </div>

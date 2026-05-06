@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { HERO_STATS } from '@/lib/constants'
+import type { WGCStat } from '@/lib/airtable'
 
 function HeroBackground() {
   return (
@@ -22,7 +23,14 @@ function HeroBackground() {
   )
 }
 
-export function HeroSection() {
+export function HeroSection({ stats }: { stats?: WGCStat[] }) {
+  // Build hero stats: use Airtable data if available, else fallback
+  const heroStats = stats && stats.length >= 3
+    ? stats.slice(0, 3).map(s => ({
+        label: s.label,
+        number: s.displayValue || `${s.prefix}${s.value >= 1000 ? Math.round(s.value / 1000) + 'K' : s.value}${s.suffix}`,
+      }))
+    : HERO_STATS
   const fadeUp = (delay: number) => ({
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0, transition: { duration: 0.6, delay } }
@@ -142,7 +150,7 @@ export function HeroSection() {
             alignItems: 'stretch',
             border: '1px solid var(--bg-border)',
           }}>
-            {HERO_STATS.map((stat, i) => (
+            {heroStats.map((stat, i) => (
               <div
                 key={stat.label}
                 style={{
