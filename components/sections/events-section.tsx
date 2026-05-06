@@ -163,7 +163,7 @@ function EventCard({ event, index }: { event: WGCEvent; index: number }) {
         borderColor: 'var(--lime-dim)',
         background: 'var(--bg-surface)',
         y: -2,
-      } as object}
+      } as any}
     >
       <h4
         className="font-body text-text-primary"

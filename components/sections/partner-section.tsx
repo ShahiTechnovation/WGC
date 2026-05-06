@@ -68,7 +68,7 @@ export function PartnerSection({ hideHeader = false }: { hideHeader?: boolean })
                   borderLeft: '2px solid #C4963A',
                   transition: 'background 0.2s ease',
                 }}
-                whileHover={{ background: 'var(--bg-elevated)' } as object}
+                whileHover={{ background: 'var(--bg-elevated)' } as any}
               >
                 <span
                   style={{
@@ -134,7 +134,7 @@ export function PartnerSection({ hideHeader = false }: { hideHeader?: boolean })
                   transition: 'background 0.15s ease',
                   cursor: 'default',
                 }}
-                whileHover={{ background: 'var(--bg-elevated)' } as object}
+                whileHover={{ background: 'var(--bg-elevated)' } as any}
               >
                 <p
                   className="font-body text-text-secondary"

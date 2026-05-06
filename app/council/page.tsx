@@ -78,7 +78,7 @@ export default function CouncilPage() {
                   position: 'relative',
                   transition: 'background 0.2s ease',
                 }}
-                whileHover={{ background: 'var(--bg-elevated)' } as object}
+                whileHover={{ background: 'var(--bg-elevated)' } as any}
               >
                 {member.founding && (
                   <span
@@ -177,7 +177,7 @@ export default function CouncilPage() {
                   padding: '32px',
                   transition: 'border-color 0.2s ease',
                 }}
-                whileHover={{ borderColor: 'var(--lime-dim)' } as object}
+                whileHover={{ borderColor: 'var(--lime-dim)' } as any}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
                   <span className="font-mono" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--lime)', lineHeight: 1 }}>

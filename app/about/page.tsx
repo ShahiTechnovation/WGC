@@ -102,7 +102,7 @@ export default function AboutPage() {
                     transition: 'border-color 0.2s ease',
                     cursor: 'default',
                   }}
-                  whileHover={{ borderColor: 'var(--lime-dim)' } as object}
+                  whileHover={{ borderColor: 'var(--lime-dim)' } as any}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
                     <span
@@ -232,7 +232,7 @@ export default function AboutPage() {
                   position: 'relative',
                   transition: 'background 0.2s ease',
                 }}
-                whileHover={{ background: 'var(--bg-elevated)' } as object}
+                whileHover={{ background: 'var(--bg-elevated)' } as any}
               >
                 <span
                   className="font-mono"

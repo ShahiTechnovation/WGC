@@ -107,7 +107,7 @@ export default function PartnersPage() {
                       transition: 'background 0.2s ease',
                       position: 'relative',
                     }}
-                    whileHover={{ background: 'var(--bg-elevated)' } as object}
+                    whileHover={{ background: 'var(--bg-elevated)' } as any}
                   >
                     {isTitleTier && (
                       <span
@@ -192,7 +192,7 @@ export default function PartnersPage() {
                     background: 'var(--bg-surface)',
                     transition: 'background 0.2s ease',
                   }}
-                  whileHover={{ background: 'var(--bg-elevated)' } as object}
+                  whileHover={{ background: 'var(--bg-elevated)' } as any}
                 >
                   <span
                     className="font-mono"
