@@ -1,7 +1,7 @@
 import { getPartners } from '@/lib/airtable'
 import PartnersClient from './client'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function PartnersPage() {
   const partners = await getPartners()

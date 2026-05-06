@@ -23,7 +23,7 @@ import {
 // ── Config ─────────────────────────────────────────────
 const BASE_ID = process.env.AIRTABLE_BASE_ID!
 const TOKEN   = process.env.AIRTABLE_API_TOKEN!
-const REVALIDATE = 300 // 5 minutes
+const REVALIDATE = 0 // Always fetch fresh — no cache
 
 // ── Types ──────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ async function fetchTable(
   try {
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${TOKEN}` },
-      next: { revalidate: REVALIDATE },
+      cache: 'no-store',
     })
 
     if (!res.ok) {

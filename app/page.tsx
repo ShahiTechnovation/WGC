@@ -14,7 +14,7 @@ import {
   getSiteStats,
 } from '@/lib/airtable'
 
-export const revalidate = 300 // ISR: revalidate every 5 minutes
+export const dynamic = 'force-dynamic'
 
 export default async function Home() {
   // Fetch all data in parallel — mock fallback is built into each function

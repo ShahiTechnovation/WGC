@@ -1,7 +1,7 @@
 import { getCouncilMembers, getDivisions } from '@/lib/airtable'
 import CouncilClient from './client'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function CouncilPage() {
   const [members, divisions] = await Promise.all([

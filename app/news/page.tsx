@@ -1,7 +1,7 @@
 import { getNews } from '@/lib/airtable'
 import NewsClient from './client'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function NewsPage() {
   const posts = await getNews()
