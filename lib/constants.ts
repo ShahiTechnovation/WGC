@@ -140,6 +140,7 @@ export interface Partner {
   name: string
   handle: string
   tier: 'title' | 'org' | 'media' | 'community'
+  logoUrl?: string
 }
 
 export const PARTNERS: Partner[] = [

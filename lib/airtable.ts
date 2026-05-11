@@ -68,16 +68,18 @@ interface AirtableRecord {
 
 async function fetchTable(
   tableName: string,
-  params: Record<string, string> = {}
+  params: Record<string, string> = {},
+  sortField?: string
 ): Promise<AirtableRecord[]> {
   if (!BASE_ID || !TOKEN) return []
 
-  const searchParams = new URLSearchParams({
-    ...params,
-    'sort[0][field]': 'Display Order',
-    'sort[0][direction]': 'asc',
-  })
+  const baseParams: Record<string, string> = { ...params }
+  if (sortField) {
+    baseParams['sort[0][field]'] = sortField
+    baseParams['sort[0][direction]'] = 'asc'
+  }
 
+  const searchParams = new URLSearchParams(baseParams)
   const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(tableName)}?${searchParams}`
 
   try {
@@ -87,7 +89,8 @@ async function fetchTable(
     })
 
     if (!res.ok) {
-      console.warn(`[Airtable] ${tableName} fetch failed: ${res.status}`)
+      const body = await res.text().catch(() => '')
+      console.warn(`[Airtable] ${tableName} fetch failed: ${res.status}`, body)
       return []
     }
 
@@ -152,7 +155,7 @@ function mapEvent(rec: AirtableRecord): WGCEvent {
 }
 
 export async function getEvents(): Promise<WGCEvent[]> {
-  const records = await fetchTable('Events')
+  const records = await fetchTable('Events', {}, 'Display Order')
   if (records.length === 0) return EVENTS_ROADMAP  // fallback
   return records.map(mapEvent).sort((a, b) => {
     // Flagship always last
@@ -182,7 +185,7 @@ function mapMember(rec: AirtableRecord): CouncilMember {
 }
 
 export async function getCouncilMembers(): Promise<CouncilMember[]> {
-  const records = await fetchTable('Council Members')
+  const records = await fetchTable('Council Members', {}, 'Display Order')
   if (records.length === 0) return COUNCIL_MEMBERS  // fallback
   return records.map(mapMember)
 }
@@ -206,17 +209,18 @@ function mapPartner(rec: AirtableRecord): Partner {
   const tier = TIER_MAP[rawTier] ?? 'org'
 
   return {
-    id:     str(f['Partner ID'], rec.id),
-    name:   str(f['Organization Name'], str(f['Name'], 'Partner')),
-    handle: str(f['Social Handle'], ''),
+    id:      str(f['Partner ID'], rec.id),
+    name:    str(f['Organization Name'], str(f['Name'], 'Partner')),
+    handle:  str(f['Social Handle'], ''),
     tier,
+    logoUrl: attachmentUrl(f['Logo']) || undefined,
   }
 }
 
 export async function getPartners(): Promise<Partner[]> {
   const records = await fetchTable('Partners', {
     'filterByFormula': '{Is Active}=1',
-  })
+  }, 'Display Order')
   if (records.length === 0) return PARTNERS  // fallback
   return records.map(mapPartner)
 }
@@ -243,7 +247,7 @@ export async function getNews(featuredOnly = false): Promise<NewsPost[]> {
 
   const records = await fetchTable('News & Announcements', {
     ...filter,
-    'sort[0][field]': 'Published Date',
+    'sort[0][field]':     'Published Date',
     'sort[0][direction]': 'desc',
   })
   if (records.length === 0) return NEWS_POSTS  // fallback
@@ -269,6 +273,7 @@ function mapCity(rec: AirtableRecord, index: number): WGCCity {
 }
 
 export async function getCities(): Promise<WGCCity[]> {
+  // No sortField — Cities table may not have 'Display Order'
   const records = await fetchTable('Cities / Regions')
   if (records.length === 0) {
     // Shape mock data to WGCCity type
@@ -331,7 +336,7 @@ function mapStat(rec: AirtableRecord): WGCStat {
 }
 
 export async function getSiteStats(): Promise<WGCStat[]> {
-  const records = await fetchTable('Site Stats', { 'filterByFormula': '{Is Active}=1' })
+  const records = await fetchTable('Site Stats', { 'filterByFormula': '{Is Active}=1' }, 'Display Order')
   if (records.length === 0) {
     // Shape STATS_BAR constants to WGCStat
     return STATS_BAR.map(s => ({
@@ -344,6 +349,33 @@ export async function getSiteStats(): Promise<WGCStat[]> {
     }))
   }
   return records.map(mapStat)
+}
+
+// ── Past Event Spotlight (images only) ───────────────
+
+export interface PastEventSpotlight {
+  id: string
+  imageUrl: string
+  caption: string   // optional label shown on hover
+}
+
+function mapSpotlight(rec: AirtableRecord, index: number): PastEventSpotlight {
+  const f = rec.fields
+  // Support both single-attachment and multi-attachment fields named "Photo" or "Event Photo"
+  const imageUrl = attachmentUrl(f['Photo']) || attachmentUrl(f['Event Photo']) || ''
+  return {
+    id:       str(f['Spotlight ID'], rec.id),
+    imageUrl,
+    caption:  str(f['Caption'], ''),
+  }
+}
+
+export async function getSpotlights(): Promise<PastEventSpotlight[]> {
+  const records = await fetchTable('Past Event Spotlights', {
+    'filterByFormula': '{Is Active}=1',
+  }, 'Display Order')
+  if (records.length === 0) return []
+  return records.map(mapSpotlight).filter(s => s.imageUrl)
 }
 
 // ── Submit Application ────────────────────────────────

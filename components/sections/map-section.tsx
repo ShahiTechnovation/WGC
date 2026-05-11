@@ -3,26 +3,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MAP_CITIES } from '@/lib/constants'
+import type { WGCCity } from '@/lib/airtable'
 
-// City coordinates [lng, lat]
+// City coordinates [lng, lat] — used for Mapbox markers when Airtable has no lat/lng
 const CITY_COORDS: Record<string, [number, number]> = {
-  delhi: [77.1025, 28.7041],
-  mumbai: [72.8777, 19.0760],
-  bangalore: [77.5946, 12.9716],
-  seoul: [126.9780, 37.5665],
-  tokyo: [139.6917, 35.6895],
-  singapore: [103.8198, 1.3521],
-  jakarta: [106.8456, -6.2088],
-  bangkok: [100.5018, 13.7563],
-  kualalumpur: [101.6869, 3.1390],
-  dubai: [55.2708, 25.2048],
-  hongkong: [114.1694, 22.3193],
-  taipei: [121.5654, 25.0330],
+  delhi:        [77.1025,  28.7041],
+  mumbai:       [72.8777,  19.0760],
+  bangalore:    [77.5946,  12.9716],
+  seoul:        [126.9780, 37.5665],
+  tokyo:        [139.6917, 35.6895],
+  singapore:    [103.8198,  1.3521],
+  jakarta:      [106.8456, -6.2088],
+  bangkok:      [100.5018, 13.7563],
+  kualalumpur:  [101.6869,  3.1390],
+  dubai:        [55.2708,  25.2048],
+  hongkong:     [114.1694, 22.3193],
+  taipei:       [121.5654, 25.0330],
 }
 
-// Asia center
 const INITIAL_CENTER: [number, number] = [100, 25]
-const INITIAL_ZOOM = 1.8
 const GLOBE_ZOOM = 1.5
 
 interface CityPopup {
@@ -33,7 +32,38 @@ interface CityPopup {
   builders: string
 }
 
-export function MapSection() {
+// Helper: get coords from WGCCity — use lat/lng if valid, fall back to slug lookup
+function getCityCoords(city: WGCCity): [number, number] | null {
+  if (city.lat !== 0 || city.lng !== 0) return [city.lng, city.lat]
+  // Try to match by ID slug (lowercase, no spaces)
+  const slug = city.id.toLowerCase().replace(/[\s-]+/g, '').replace(/ncr|metro/, '')
+  const match = CITY_COORDS[slug]
+  if (match) return match
+  // Try matching city name
+  const nameSlug = city.name.toLowerCase().replace(/[\s-]+/g, '').split(/[,\s]/)[0]
+  return CITY_COORDS[nameSlug] ?? null
+}
+
+interface MapSectionProps {
+  cities?: WGCCity[]
+}
+
+export function MapSection({ cities }: MapSectionProps) {
+  // Use Airtable cities if provided, otherwise shape mock data
+  const displayCities: WGCCity[] = cities && cities.length > 0
+    ? cities
+    : MAP_CITIES.map(c => ({
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        quarter: c.quarter,
+        builders: c.builders,
+        lat: 0,
+        lng: 0,
+        mapX: c.x,
+        mapY: c.y,
+      }))
+
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const markersRef = useRef<mapboxgl.Marker[]>([])
@@ -73,7 +103,7 @@ export function MapSection() {
       mapRef.current = map
 
       map.on('style.load', () => {
-        // Dark atmosphere / fog
+        // Dark atmosphere
         map.setFog({
           color: 'rgb(5, 5, 5)',
           'high-color': 'rgb(10, 10, 10)',
@@ -82,41 +112,27 @@ export function MapSection() {
           'star-intensity': 0.6,
         } as Parameters<typeof map.setFog>[0])
 
-        // Override water + land colors for dark editorial look
         map.setPaintProperty('water', 'fill-color', '#0a0f12')
         map.setPaintProperty('land', 'background-color', '#0e1014')
 
-        // Add city markers
-        MAP_CITIES.forEach((city) => {
-          const coords = CITY_COORDS[city.id]
+        // Add markers for all cities
+        displayCities.forEach((city) => {
+          const coords = getCityCoords(city)
           if (!coords) return
 
-          // Custom DOM marker
           const el = document.createElement('div')
-          el.style.cssText = `
-            position: relative;
-            width: 12px;
-            height: 12px;
-            cursor: pointer;
-          `
+          el.style.cssText = `position: relative; width: 12px; height: 12px; cursor: pointer;`
 
-          // Outer pulse ring
           const ring = document.createElement('div')
           ring.style.cssText = `
-            position: absolute;
-            inset: -4px;
-            border-radius: 50%;
+            position: absolute; inset: -4px; border-radius: 50%;
             border: 1px solid ${city.status === 'confirmed' ? '#AADF2E' : '#666666'};
-            animation: pulse-ring 2s ease-out infinite;
-            opacity: 0.5;
+            animation: pulse-ring 2s ease-out infinite; opacity: 0.5;
           `
 
-          // Inner dot
           const dot = document.createElement('div')
           dot.style.cssText = `
-            position: absolute;
-            inset: 2px;
-            border-radius: 50%;
+            position: absolute; inset: 2px; border-radius: 50%;
             background: ${city.status === 'confirmed' ? '#AADF2E' : '#888888'};
             box-shadow: ${city.status === 'confirmed' ? '0 0 8px rgba(170,223,46,0.8)' : 'none'};
           `
@@ -124,8 +140,7 @@ export function MapSection() {
           el.appendChild(ring)
           el.appendChild(dot)
 
-          // Hover events
-          el.addEventListener('mouseenter', (e) => {
+          el.addEventListener('mouseenter', () => {
             const rect = el.getBoundingClientRect()
             const container = mapContainer.current!.getBoundingClientRect()
             setPopupPos({
@@ -154,13 +169,12 @@ export function MapSection() {
           markersRef.current.push(marker)
         })
 
-        // Auto-rotate the globe slowly
-        let rotateStart: number
+        // Auto-rotate globe
         const secondsPerRevolution = 120
         const maxSpinZoom = 5
         const slowSpinZoom = 3
         let userInteracting = false
-        let spinEnabled = true
+        const spinEnabled = true
 
         function spinGlobe() {
           const zoom = map.getZoom()
@@ -195,10 +209,11 @@ export function MapSection() {
         mapRef.current = null
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const confirmedCount = MAP_CITIES.filter(c => c.status === 'confirmed').length
-  const upcomingCount = MAP_CITIES.filter(c => c.status === 'upcoming').length
+  const confirmedCount = displayCities.filter(c => c.status === 'confirmed').length
+  const upcomingCount  = displayCities.filter(c => c.status === 'upcoming').length
 
   return (
     <section
@@ -211,11 +226,10 @@ export function MapSection() {
         borderTop: '1px solid var(--bg-border)',
       }}
     >
-      {/* Inject pulse animation */}
       <style>{`
         @keyframes pulse-ring {
-          0% { transform: scale(0.8); opacity: 0.8; }
-          70% { transform: scale(2.5); opacity: 0; }
+          0%   { transform: scale(0.8); opacity: 0.8; }
+          70%  { transform: scale(2.5); opacity: 0; }
           100% { transform: scale(0.8); opacity: 0; }
         }
         .mapboxgl-ctrl-logo { opacity: 0.3 !important; filter: grayscale(1); }
@@ -223,7 +237,7 @@ export function MapSection() {
       `}</style>
 
       <div className="wgc-container">
-        {/* ── Header ─────────────────────────────────── */}
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -242,35 +256,25 @@ export function MapSection() {
             </h2>
           </div>
 
-          {/* Stats bar */}
           <div style={{ display: 'flex', border: '1px solid var(--bg-border)', flexShrink: 0 }}>
             {[
-              { val: '20+', label: 'Cities' },
-              { val: '12+', label: 'Nations' },
-              { val: 'Asia', label: 'Wide' },
+              { val: `${displayCities.length}+`, label: 'Cities' },
+              { val: '12+',   label: 'Nations' },
+              { val: 'Asia',  label: 'Wide' },
               { val: 'Nov 19', label: '2026' },
             ].map((s, i) => (
               <div
                 key={s.label}
-                style={{
-                  padding: '12px 20px',
-                  borderLeft: i > 0 ? '1px solid var(--bg-border)' : 'none',
-                  textAlign: 'center',
-                  minWidth: '72px',
-                }}
+                style={{ padding: '12px 20px', borderLeft: i > 0 ? '1px solid var(--bg-border)' : 'none', textAlign: 'center', minWidth: '72px' }}
               >
-                <p className="font-bebas text-lime" style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', lineHeight: 1 }}>
-                  {s.val}
-                </p>
-                <p className="font-mono text-text-secondary" style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: '3px' }}>
-                  {s.label}
-                </p>
+                <p className="font-bebas text-lime" style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', lineHeight: 1 }}>{s.val}</p>
+                <p className="font-mono text-text-secondary" style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.14em', marginTop: '3px' }}>{s.label}</p>
               </div>
             ))}
           </div>
         </motion.div>
 
-        {/* ── Globe Container ─────────────────────── */}
+        {/* Globe Container */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -285,7 +289,6 @@ export function MapSection() {
             background: '#020408',
           }}
         >
-          {/* Mapbox map div */}
           <div ref={mapContainer} style={{ position: 'absolute', inset: 0 }} />
 
           {/* Loading overlay */}
@@ -310,15 +313,10 @@ export function MapSection() {
               position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: '#020408', flexDirection: 'column', gap: '12px', padding: '24px',
             }}>
-              <div style={{
-                width: '48px', height: '48px', border: '1px solid var(--lime)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
+              <div style={{ width: '48px', height: '48px', border: '1px solid var(--lime)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: '20px' }}>🌐</span>
               </div>
-              <p className="font-mono text-text-primary" style={{ fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>
-                MAPBOX TOKEN REQUIRED
-              </p>
+              <p className="font-mono text-text-primary" style={{ fontSize: '13px', fontWeight: 600, textAlign: 'center' }}>MAPBOX TOKEN REQUIRED</p>
               <p className="font-mono text-text-secondary" style={{ fontSize: '11px', textAlign: 'center', maxWidth: '320px', lineHeight: 1.7 }}>
                 Add your token to <code style={{ color: 'var(--lime)' }}>.env.local</code>:<br />
                 <code style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>NEXT_PUBLIC_MAPBOX_TOKEN=pk.ey...</code>
@@ -387,7 +385,7 @@ export function MapSection() {
             )}
           </AnimatePresence>
 
-          {/* Legend — bottom left */}
+          {/* Legend */}
           <div style={{
             position: 'absolute', bottom: '16px', left: '16px',
             background: 'rgba(5,5,5,0.85)', border: '1px solid var(--bg-border)',
@@ -411,7 +409,7 @@ export function MapSection() {
             ))}
           </div>
 
-          {/* Top-right overlay: drag hint */}
+          {/* Drag hint */}
           {mapLoaded && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -431,12 +429,7 @@ export function MapSection() {
         </motion.div>
       </div>
 
-      {/* Spin animation */}
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </section>
   )
 }
