@@ -2,7 +2,51 @@
 
 import { motion } from 'framer-motion'
 import { PARTNERS, PARTNER_BENEFITS, type Partner } from '@/lib/constants'
+import { detectSocial } from '@/lib/social'
 import Link from 'next/link'
+
+// ── Helpers (same as partner-section) ────────────────────────────────────────
+function SocialIcon({ url }: { url: string }) {
+  if (!url) return null
+  const social = detectSocial(url)
+  if (!social.href) return null
+  return (
+    <a href={social.href} target="_blank" rel="noopener noreferrer" title={social.name}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        padding: '4px 10px', border: '1px solid var(--bg-border)',
+        background: 'var(--bg-elevated)', textDecoration: 'none',
+        transition: 'border-color 0.2s, background 0.2s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = social.color; e.currentTarget.style.background = `${social.color}18` }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--bg-border)'; e.currentTarget.style.background = 'var(--bg-elevated)' }}
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill={social.color}><path d={social.icon} /></svg>
+      <span className="font-mono" style={{ fontSize: '9px', color: social.color, letterSpacing: '0.08em' }}>{social.name}</span>
+    </a>
+  )
+}
+
+function PartnerLogo({ partner, size = 'md' }: { partner: Partner; size?: 'sm' | 'md' | 'lg' }) {
+  const h = size === 'lg' ? 44 : size === 'md' ? 32 : 22
+  const nameFontSize = size === 'lg' ? '15px' : size === 'md' ? '13px' : '11px'
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {partner.logoUrl ? (
+        <div style={{ height: `${h}px`, display: 'flex', alignItems: 'center' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={partner.logoUrl} alt={partner.name} style={{
+            maxHeight: `${h}px`, maxWidth: size === 'lg' ? '130px' : '95px',
+            objectFit: 'contain', objectPosition: 'left center',
+          }} />
+        </div>
+      ) : null}
+      <p className="font-body text-text-primary" style={{ fontWeight: 600, fontSize: nameFontSize, lineHeight: 1.2 }}>
+        {partner.name}
+      </p>
+    </div>
+  )
+}
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -91,52 +135,29 @@ export default function PartnersClient({ partners = PARTNERS as Partner[] }: { p
                 background: 'var(--bg-border)', border: '1px solid var(--bg-border)',
               }}>
                 {tierPartners.map((partner, i) => (
-                  <motion.div
-                    key={partner.id}
-                    {...fadeUp(i * 0.05)}
-                    style={{
-                      background: ti % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-void)',
-                      padding: isTitleTier ? '36px 32px' : '24px',
-                      transition: 'background 0.2s ease', position: 'relative',
-                    }}
-                    whileHover={{ background: 'var(--bg-elevated)' } as any}
+                  <div key={partner.id} style={{
+                    background: ti % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-void)',
+                    padding: isTitleTier ? '32px' : '20px 18px',
+                    transition: 'background 0.2s ease', position: 'relative',
+                    display: 'flex', flexDirection: 'column', gap: '12px',
+                  }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = ti % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-void)')}
                   >
                     {isTitleTier && (
                       <span style={{
                         display: 'inline-block', padding: '3px 8px', background: '#C4963A',
                         color: '#050505', fontFamily: 'var(--font-mono), monospace',
                         fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em',
-                        textTransform: 'uppercase', marginBottom: '20px',
+                        textTransform: 'uppercase', alignSelf: 'flex-start',
                       }}>TITLE</span>
                     )}
-
-                    {/* Logo placeholder or partner name */}
-                    {partner.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={partner.logoUrl}
-                        alt={partner.name}
-                        style={{
-                          width: isTitleTier ? '120px' : '80px',
-                          height: isTitleTier ? '48px' : '32px',
-                          objectFit: 'contain', objectPosition: 'left center',
-                          filter: 'brightness(0) invert(1)', opacity: 0.75,
-                          marginBottom: '12px', display: 'block',
-                        }}
-                      />
-                    ) : null}
-
-                    <h3 className="font-body" style={{
-                      fontWeight: isTitleTier ? 700 : 600,
-                      fontSize: isTitleTier ? '18px' : '14px',
-                      color: 'var(--text-primary)', marginBottom: '6px', lineHeight: 1.3,
-                    }}>
-                      {partner.name}
-                    </h3>
-                    <p className="font-mono text-text-secondary" style={{ fontSize: '11px', letterSpacing: '0.06em' }}>
-                      {partner.handle}
-                    </p>
-                  </motion.div>
+                    <PartnerLogo partner={partner} size={isTitleTier ? 'lg' : 'md'} />
+                    {!partner.logoUrl && (
+                      <p className="font-mono text-text-secondary" style={{ fontSize: '10px', letterSpacing: '0.06em' }}>{partner.name}</p>
+                    )}
+                    <SocialIcon url={partner.handle} />
+                  </div>
                 ))}
               </div>
             </div>

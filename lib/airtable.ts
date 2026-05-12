@@ -208,12 +208,20 @@ function mapPartner(rec: AirtableRecord): Partner {
   const rawTier = str(f['Tier']).toLowerCase()
   const tier = TIER_MAP[rawTier] ?? 'org'
 
+  // Social link: try full URL fields first, then handle field
+  const socialUrl =
+    str(f['Social Link']) ||
+    str(f['Social URL']) ||
+    str(f['Website']) ||
+    str(f['Social Handle']) ||
+    ''
+
   return {
-    id:      str(f['Partner ID'], rec.id),
-    name:    str(f['Organization Name'], str(f['Name'], 'Partner')),
-    handle:  str(f['Social Handle'], ''),
+    id:        str(f['Partner ID'], rec.id),
+    name:      str(f['Organization Name'], str(f['Name'], 'Partner')),
+    handle:    socialUrl,
     tier,
-    logoUrl: attachmentUrl(f['Logo']) || undefined,
+    logoUrl:   attachmentUrl(f['Logo']) || attachmentUrl(f['Logo URL']) || undefined,
   }
 }
 

@@ -49,16 +49,17 @@ export function Navbar() {
             : 'bg-transparent border-b border-transparent'
         }`}
       >
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl w-full mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-full">
-            {/* LEFT: Logo & Brand */}
+            {/* LEFT: Logo */}
             <Link href="/" className="flex items-center group">
               <Image
                 src="/image.png"
                 alt="World Gaming Council"
-                width={48}
+                width={180}
                 height={48}
-                className="object-contain transition-opacity duration-300 group-hover:opacity-90"
+                className="object-contain transition-opacity duration-300 group-hover:opacity-85"
+                style={{ mixBlendMode: 'screen' }}
                 priority
               />
             </Link>
