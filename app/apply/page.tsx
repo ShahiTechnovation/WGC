@@ -4,11 +4,20 @@ import { useState, FormEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const APPLICANT_TYPES = [
-  { value: 'builder', label: 'Builder / Developer' },
-  { value: 'organizer', label: 'Event Organizer' },
-  { value: 'partner', label: 'Partner / Sponsor' },
-  { value: 'media', label: 'Media' },
+  { value: 'builder',   label: 'Builder / Developer', icon: '🛠️' },
+  { value: 'organizer', label: 'Event Organizer',      icon: '🎪' },
+  { value: 'partner',   label: 'Partner / Sponsor',    icon: '🤝' },
+  { value: 'media',     label: 'Media',                icon: '📡' },
+  { value: 'kol',       label: 'KOL / Influencer',     icon: '⭐' },
 ] as const
+
+const FOLLOWERS_RANGES = [
+  '1K – 10K',
+  '10K – 50K',
+  '50K – 250K',
+  '250K – 1M',
+  '1M+',
+]
 
 export default function ApplyPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +26,8 @@ export default function ApplyPage() {
     organization: '',
     type: 'builder',
     message: '',
+    socialHandle: '',
+    followersRange: '',
   })
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -24,6 +35,8 @@ export default function ApplyPage() {
 
   const update = (field: string, val: string) =>
     setFormData(prev => ({ ...prev, [field]: val }))
+
+  const isKol = formData.type === 'kol'
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -58,6 +71,7 @@ export default function ApplyPage() {
     fontSize: '14px',
     outline: 'none',
     transition: 'border-color 0.2s ease',
+    boxSizing: 'border-box' as const,
   }
 
   const labelStyle = {
@@ -70,6 +84,11 @@ export default function ApplyPage() {
     color: 'var(--text-secondary)',
     marginBottom: '8px',
   }
+
+  const focusHandler = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    (e.target.style.borderColor = 'var(--lime-dim)')
+  const blurHandler  = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    (e.target.style.borderColor = 'var(--bg-border)')
 
   return (
     <div style={{ paddingTop: '64px' }}>
@@ -98,8 +117,9 @@ export default function ApplyPage() {
               Join the{' '}
               <em className="text-lime not-italic">Council</em>
             </h1>
-            <p className="font-body text-text-secondary" style={{ fontSize: 'clamp(15px, 1.2vw, 18px)', maxWidth: '520px', lineHeight: 1.75 }}>
-              Whether you&apos;re a builder, organizer, or brand looking to partner — applying to WGC is your first step.
+            <p className="font-body text-text-secondary" style={{ fontSize: 'clamp(15px, 1.2vw, 18px)', maxWidth: '560px', lineHeight: 1.75 }}>
+              Whether you&apos;re a builder, organizer, brand, or influencer looking to amplify the ecosystem —
+              applying to WGC is your first move.
             </p>
           </motion.div>
         </div>
@@ -117,10 +137,13 @@ export default function ApplyPage() {
                 exit={{ opacity: 0, scale: 0.96 }}
                 style={{ textAlign: 'center', padding: '80px 0' }}
               >
-                <div
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
                   style={{
-                    width: '72px',
-                    height: '72px',
+                    width: '80px',
+                    height: '80px',
                     margin: '0 auto 32px',
                     background: 'rgba(170,223,46,0.1)',
                     border: '1px solid var(--lime)',
@@ -129,16 +152,19 @@ export default function ApplyPage() {
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ fontSize: '32px', color: 'var(--lime)' }}>✓</span>
-                </div>
+                  <span style={{ fontSize: '36px', color: 'var(--lime)' }}>✓</span>
+                </motion.div>
                 <h2
                   className="font-heading font-bold text-text-primary"
                   style={{ fontSize: 'var(--type-h3)', marginBottom: '16px' }}
                 >
-                  Application Received
+                  You&apos;re on the Radar
                 </h2>
-                <p className="font-body text-text-secondary" style={{ fontSize: '15px', lineHeight: 1.75, maxWidth: '400px', margin: '0 auto' }}>
-                  We&apos;ll review your application and get back to you within 7 business days.
+                <p className="font-body text-text-secondary" style={{ fontSize: '15px', lineHeight: 1.75, maxWidth: '420px', margin: '0 auto 12px' }}>
+                  Your application has been received. Check your inbox — we&apos;ve sent you a confirmation.
+                </p>
+                <p className="font-mono text-text-secondary" style={{ fontSize: '11px', letterSpacing: '0.06em', opacity: 0.6 }}>
+                  We&apos;ll review and respond within 7 business days.
                 </p>
               </motion.div>
             ) : (
@@ -161,6 +187,39 @@ export default function ApplyPage() {
                   <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(to right, var(--lime), transparent)' }} />
 
                   <form onSubmit={handleSubmit} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                    {/* Application type */}
+                    <div>
+                      <label style={labelStyle}>I am a…</label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {APPLICANT_TYPES.map(t => (
+                          <button
+                            key={t.value}
+                            type="button"
+                            onClick={() => update('type', t.value)}
+                            style={{
+                              padding: '10px 16px',
+                              fontFamily: 'var(--font-mono), monospace',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              letterSpacing: '0.08em',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              background: formData.type === t.value ? 'var(--lime)' : 'transparent',
+                              color: formData.type === t.value ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                              border: `1px solid ${formData.type === t.value ? 'var(--lime)' : 'var(--bg-border)'}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>{t.icon}</span>
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Name + Email row */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
                       <div>
@@ -173,8 +232,8 @@ export default function ApplyPage() {
                           onChange={e => update('name', e.target.value)}
                           placeholder="Your name"
                           style={inputStyle}
-                          onFocus={e => (e.target.style.borderColor = 'var(--lime-dim)')}
-                          onBlur={e => (e.target.style.borderColor = 'var(--bg-border)')}
+                          onFocus={focusHandler}
+                          onBlur={blurHandler}
                         />
                       </div>
                       <div>
@@ -187,77 +246,133 @@ export default function ApplyPage() {
                           onChange={e => update('email', e.target.value)}
                           placeholder="you@email.com"
                           style={inputStyle}
-                          onFocus={e => (e.target.style.borderColor = 'var(--lime-dim)')}
-                          onBlur={e => (e.target.style.borderColor = 'var(--bg-border)')}
+                          onFocus={focusHandler}
+                          onBlur={blurHandler}
                         />
                       </div>
                     </div>
 
                     {/* Organization */}
                     <div>
-                      <label htmlFor="apply-org" style={labelStyle}>Organization</label>
+                      <label htmlFor="apply-org" style={labelStyle}>
+                        {isKol ? 'Agency / Management (optional)' : 'Organization'}
+                      </label>
                       <input
                         id="apply-org"
                         type="text"
                         value={formData.organization}
                         onChange={e => update('organization', e.target.value)}
-                        placeholder="Company or org name (optional)"
+                        placeholder={isKol ? 'Agency or management company' : 'Company or org name (optional)'}
                         style={inputStyle}
-                        onFocus={e => (e.target.style.borderColor = 'var(--lime-dim)')}
-                        onBlur={e => (e.target.style.borderColor = 'var(--bg-border)')}
+                        onFocus={focusHandler}
+                        onBlur={blurHandler}
                       />
                     </div>
 
-                    {/* Application type */}
-                    <div>
-                      <label htmlFor="apply-type" style={labelStyle}>Application Type</label>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {APPLICANT_TYPES.map(t => (
-                          <button
-                            key={t.value}
-                            type="button"
-                            onClick={() => update('type', t.value)}
-                            style={{
-                              padding: '10px 18px',
-                              fontFamily: 'var(--font-mono), monospace',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              letterSpacing: '0.08em',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              background: formData.type === t.value ? 'var(--lime)' : 'transparent',
-                              color: formData.type === t.value ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                              border: `1px solid ${formData.type === t.value ? 'var(--lime)' : 'var(--bg-border)'}`,
-                            }}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                    {/* KOL-specific fields */}
+                    <AnimatePresence>
+                      {isKol && (
+                        <motion.div
+                          key="kol-fields"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            {/* Social Handle */}
+                            <div>
+                              <label htmlFor="apply-social" style={labelStyle}>Primary Social Handle</label>
+                              <input
+                                id="apply-social"
+                                type="text"
+                                value={formData.socialHandle}
+                                onChange={e => update('socialHandle', e.target.value)}
+                                placeholder="@yourhandle (Twitter / X, TikTok, Instagram…)"
+                                style={inputStyle}
+                                onFocus={focusHandler}
+                                onBlur={blurHandler}
+                              />
+                            </div>
+
+                            {/* Followers range */}
+                            <div>
+                              <label htmlFor="apply-followers" style={labelStyle}>Follower Range</label>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {FOLLOWERS_RANGES.map(range => (
+                                  <button
+                                    key={range}
+                                    type="button"
+                                    onClick={() => update('followersRange', range)}
+                                    style={{
+                                      padding: '8px 14px',
+                                      fontFamily: 'var(--font-mono), monospace',
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      letterSpacing: '0.06em',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease',
+                                      background: formData.followersRange === range ? 'rgba(170,223,46,0.15)' : 'transparent',
+                                      color: formData.followersRange === range ? 'var(--lime)' : 'var(--text-secondary)',
+                                      border: `1px solid ${formData.followersRange === range ? 'var(--lime-dim)' : 'var(--bg-border)'}`,
+                                    }}
+                                  >
+                                    {range}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* KOL callout */}
+                            <div style={{
+                              padding: '16px',
+                              background: 'rgba(170,223,46,0.04)',
+                              border: '1px solid rgba(170,223,46,0.15)',
+                              display: 'flex',
+                              gap: '12px',
+                              alignItems: 'flex-start',
+                            }}>
+                              <span style={{ fontSize: '18px', flexShrink: 0, marginTop: '1px' }}>⭐</span>
+                              <div>
+                                <p className="font-mono" style={{ margin: '0 0 4px', fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', color: 'var(--lime)', textTransform: 'uppercase' }}>KOL Programme</p>
+                                <p className="font-body text-text-secondary" style={{ margin: 0, fontSize: '13px', lineHeight: 1.6 }}>
+                                  As a WGC KOL, you get exclusive content drops, event access, and co-marketing opportunities across the Web3 gaming ecosystem.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
                     {/* Message */}
                     <div>
-                      <label htmlFor="apply-message" style={labelStyle}>Why WGC?</label>
+                      <label htmlFor="apply-message" style={labelStyle}>
+                        {isKol ? 'Your Pitch' : 'Why WGC?'}
+                      </label>
                       <textarea
                         id="apply-message"
                         rows={5}
                         value={formData.message}
                         onChange={e => update('message', e.target.value)}
-                        placeholder="Tell us why you want to join, what you bring to the ecosystem..."
+                        placeholder={isKol
+                          ? 'Tell us about your audience, content style, and how you want to collaborate…'
+                          : 'Tell us why you want to join, what you bring to the ecosystem…'
+                        }
                         style={{
                           ...inputStyle,
                           resize: 'none',
                           verticalAlign: 'top',
                         }}
-                        onFocus={e => (e.target.style.borderColor = 'var(--lime-dim)')}
-                        onBlur={e => (e.target.style.borderColor = 'var(--bg-border)')}
+                        onFocus={focusHandler}
+                        onBlur={blurHandler}
                       />
                     </div>
 
                     {/* Error */}
                     {error && (
-                      <p className="font-mono" style={{ fontSize: '12px', color: '#ff6b6b' }}>
+                      <p className="font-mono" style={{ fontSize: '12px', color: '#ff6b6b', margin: 0 }}>
                         ⚠ {error}
                       </p>
                     )}
@@ -285,7 +400,7 @@ export default function ApplyPage() {
 
                 {/* Fine print */}
                 <p className="font-mono text-text-secondary" style={{ fontSize: '11px', marginTop: '16px', lineHeight: 1.6, letterSpacing: '0.06em' }}>
-                  Applications are reviewed within 7 business days. We&apos;ll contact you at the email provided.
+                  Applications are reviewed within 7 business days. A confirmation will be sent to the email you provide.
                 </p>
               </motion.div>
             )}
