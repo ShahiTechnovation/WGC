@@ -60,10 +60,11 @@ const TIER_LABELS: Record<string, { label: string; accent: string }> = {
   org:       { label: 'ORG PARTNERS',      accent: 'var(--lime)' },
   media:     { label: 'MEDIA PARTNERS',    accent: 'var(--lime)' },
   community: { label: 'COMMUNITY PARTNERS', accent: 'var(--lime)' },
+  blockchain: { label: 'BLOCKCHAIN PARTNERS', accent: 'var(--lime)' },
 }
 
 export default function PartnersClient({ partners = PARTNERS as Partner[] }: { partners?: Partner[] }) {
-  const tiers = ['title', 'org', 'media', 'community'] as const
+  const tiers = ['title', 'org', 'media', 'blockchain', 'community'] as const
 
   return (
     <div style={{ paddingTop: '64px' }}>

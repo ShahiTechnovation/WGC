@@ -139,7 +139,7 @@ export interface Partner {
   id: string
   name: string
   handle: string
-  tier: 'title' | 'org' | 'media' | 'community'
+  tier: 'title' | 'org' | 'media' | 'community' | 'blockchain'
   logoUrl?: string
 }
 

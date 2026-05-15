@@ -208,10 +208,12 @@ const TIER_MAP: Record<string, Partner['tier']> = {
   'org partner':       'org',
   'media partner':     'media',
   'community partner': 'community',
+  'blockchain partner': 'blockchain',
   'title':             'title',
   'org':               'org',
   'media':             'media',
   'community':         'community',
+  'blockchain':        'blockchain',
 }
 
 function mapPartner(rec: AirtableRecord): Partner {
