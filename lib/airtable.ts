@@ -69,7 +69,8 @@ interface AirtableRecord {
 async function fetchTable(
   tableName: string,
   params: Record<string, string> = {},
-  sortField?: string
+  sortField?: string,
+  isRetry = false
 ): Promise<AirtableRecord[]> {
   if (!BASE_ID || !TOKEN) return []
 
@@ -89,15 +90,25 @@ async function fetchTable(
     })
 
     if (!res.ok) {
+      if (!isRetry && res.status === 422 && (Object.keys(params).length > 0 || sortField)) {
+        console.warn(`[Airtable] Table "${tableName}" fetch failed with 422 (likely missing field). Retrying without filter/sort...`)
+        return fetchTable(tableName, {}, undefined, true)
+      }
       const body = await res.text().catch(() => '')
-      console.warn(`[Airtable] ${tableName} fetch failed: ${res.status}`, body)
+      console.error(`[Airtable Error] Table "${tableName}" fetch failed: ${res.status}`)
+      console.error(`  URL: ${url}`)
+      console.error(`  Response: ${body}`)
       return []
     }
 
     const data = await res.json()
+    if (data.error) {
+      console.error(`[Airtable Error] API error in ${tableName}:`, data.error)
+      return []
+    }
     return data.records ?? []
   } catch (err) {
-    console.warn(`[Airtable] ${tableName} error:`, err)
+    console.error(`[Airtable Error] Network error for ${tableName}:`, err)
     return []
   }
 }
@@ -125,32 +136,32 @@ function attachmentUrl(v: unknown): string {
 
 function mapEvent(rec: AirtableRecord): WGCEvent {
   const f = rec.fields
-  const dateStr = str(f['Date'])
-  const dateObj = dateStr ? new Date(dateStr) : null
+  const dateStr = str(f['Date'] || f['Event Date'] || f['Start Date'])
+  const dateObj = dateStr && !isNaN(Date.parse(dateStr)) ? new Date(dateStr) : null
   const monthLabel = dateObj
     ? dateObj.toLocaleString('en', { month: 'short' }).toUpperCase()
-    : str(f['Month Label']).slice(0, 3).toUpperCase()
+    : str(f['Month Label'] || f['Month']).slice(0, 3).toUpperCase()
 
   // Format date nicely: "15 Jun 2026"
   const formattedDate = dateObj
     ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : dateStr
 
-  const rawStatus = str(f['Status']).toUpperCase()
+  const rawStatus = str(f['Status'] || f['Event Status']).toUpperCase()
   const status = (['CONFIRMED', 'UPCOMING', 'LIVE', 'DONE'].includes(rawStatus)
     ? rawStatus : 'UPCOMING') as WGCEvent['status']
 
   return {
-    id:          str(f['Event ID'], rec.id),
-    title:       str(f['Title'], 'Untitled Event'),
-    city:        str(f['City'], 'TBA'),
+    id:          str(f['Event ID'] || f['ID'], rec.id),
+    title:       str(f['Title'] || f['Event Name'] || f['Name'], 'Untitled Event'),
+    city:        str(f['City'] || f['Location'], 'TBA'),
     date:        formattedDate || 'TBA',
     month:       monthLabel || 'TBA',
     status,
-    flagship:    bool(f['Is Flagship']),
-    description: str(f['Description']),
-    prizePool:   str(f['Prize Pool']),
-    builders:    str(f['Expected Builders']),
+    flagship:    bool(f['Is Flagship'] || f['Flagship']),
+    description: str(f['Description'] || f['Details']),
+    prizePool:   str(f['Prize Pool'] || f['Prize']),
+    builders:    str(f['Expected Builders'] || f['Builders']),
   }
 }
 
@@ -169,17 +180,17 @@ export async function getEvents(): Promise<WGCEvent[]> {
 
 function mapMember(rec: AirtableRecord): CouncilMember {
   const f = rec.fields
-  const portrait = attachmentUrl(f['Portrait Photo'])
+  const portrait = attachmentUrl(f['Portrait Photo'] || f['Photo'] || f['Image'])
   // Fallback to local avatar if no Airtable photo
-  const memberId = str(f['Member ID'], rec.id)
+  const memberId = str(f['Member ID'] || f['ID'], rec.id)
   const localAvatar = `/avatar-${memberId}.png`
 
   return {
     id:       memberId,
-    name:     str(f['Full Name'], 'Council Member'),
-    role:     str(f['Role / Title'], str(f['Role'], '')),
-    org:      str(f['Organization'], 'WGC'),
-    founding: bool(f['Is Founding Member']),
+    name:     str(f['Full Name'] || f['Name'], 'Council Member'),
+    role:     str(f['Role / Title'] || f['Role'] || f['Title'], ''),
+    org:      str(f['Organization'] || f['Company'], 'WGC'),
+    founding: bool(f['Is Founding Member'] || f['Founding']),
     avatar:   portrait || localAvatar,
   }
 }
@@ -206,22 +217,18 @@ const TIER_MAP: Record<string, Partner['tier']> = {
 function mapPartner(rec: AirtableRecord): Partner {
   const f = rec.fields
   const rawTier = str(f['Tier']).toLowerCase()
-  const tier = TIER_MAP[rawTier] ?? 'org'
+  const tier = TIER_MAP[rawTier] ?? 'community'
 
   // Social link: try full URL fields first, then handle field
   const socialUrl =
-    str(f['Social Link']) ||
-    str(f['Social URL']) ||
-    str(f['Website']) ||
-    str(f['Social Handle']) ||
-    ''
+    str(f['Social Link'] || f['Social URL'] || f['Website'] || f['Social Handle'] || f['URL'])
 
   return {
-    id:        str(f['Partner ID'], rec.id),
-    name:      str(f['Organization Name'], str(f['Name'], 'Partner')),
+    id:        str(f['Partner ID'] || f['ID'], rec.id),
+    name:      str(f['Organization Name'] || f['Name'] || f['Company'] || f['Partner Name'], 'Partner'),
     handle:    socialUrl,
     tier,
-    logoUrl:   attachmentUrl(f['Logo']) || attachmentUrl(f['Logo URL']) || undefined,
+    logoUrl:   attachmentUrl(f['Logo'] || f['Logo URL'] || f['Image'] || f['Photo']) || undefined,
   }
 }
 
@@ -229,6 +236,7 @@ export async function getPartners(): Promise<Partner[]> {
   const records = await fetchTable('Partners', {
     'filterByFormula': '{Is Active}=1',
   }, 'Display Order')
+  
   if (records.length === 0) return PARTNERS  // fallback
   return records.map(mapPartner)
 }
@@ -238,13 +246,13 @@ export async function getPartners(): Promise<Partner[]> {
 function mapNews(rec: AirtableRecord): NewsPost {
   const f = rec.fields
   return {
-    _id:         str(f['Article ID'], rec.id),
-    title:       str(f['Title'], 'Untitled'),
+    _id:         str(f['Article ID'] || f['ID'], rec.id),
+    title:       str(f['Title'] || f['Name'] || f['Headline'], 'Untitled'),
     slug:        str(f['Slug'], rec.id),
     category:    str(f['Category'], 'News'),
-    publishedAt: str(f['Published Date'], new Date().toISOString().slice(0, 10)),
-    author:      str(f['Author Name'], 'WGC Team'),
-    excerpt:     str(f['Excerpt'], ''),
+    publishedAt: str(f['Published Date'] || f['Date'], new Date().toISOString().slice(0, 10)),
+    author:      str(f['Author Name'] || f['Author'], 'WGC Team'),
+    excerpt:     str(f['Excerpt'] || f['Summary'], ''),
   }
 }
 
@@ -268,15 +276,15 @@ function mapCity(rec: AirtableRecord, index: number): WGCCity {
   const f = rec.fields
   const rawStatus = str(f['Status']).toLowerCase()
   return {
-    id:       str(f['City ID'], `city-${index}`),
-    name:     str(f['City Name'], 'City'),
+    id:       str(f['City ID'] || f['ID'], `city-${index}`),
+    name:     str(f['City Name'] || f['Name'] || f['City'], 'City'),
     status:   rawStatus === 'confirmed' ? 'confirmed' : 'upcoming',
-    quarter:  str(f['Launch Quarter'], 'TBA'),
-    builders: str(f['Expected Builders'], 'TBA'),
-    lat:      num(f['Latitude'], 0),
-    lng:      num(f['Longitude'], 0),
-    mapX:     num(f['Map X Percent'], 50),
-    mapY:     num(f['Map Y Percent'], 50),
+    quarter:  str(f['Launch Quarter'] || f['Quarter'], 'TBA'),
+    builders: str(f['Expected Builders'] || f['Builders'], 'TBA'),
+    lat:      num(f['Latitude'] || f['Lat'], 0),
+    lng:      num(f['Longitude'] || f['Lng'], 0),
+    mapX:     num(f['Map X Percent'] || f['X'], 50),
+    mapY:     num(f['Map Y Percent'] || f['Y'], 50),
   }
 }
 
@@ -309,16 +317,16 @@ function mapDivision(rec: AirtableRecord): WGCDivision {
     ? rawStatus : 'UPCOMING') as WGCDivision['status']
 
   return {
-    number:  str(f['Division Number'], '01'),
-    name:    str(f['Division Name'], 'Division'),
-    desc:    str(f['Short Description'], ''),
+    number:  str(f['Division Number'] || f['Number'], '01'),
+    name:    str(f['Division Name'] || f['Name'], 'Division'),
+    desc:    str(f['Short Description'] || f['Description'], ''),
     status,
-    details: str(f['Full Details'], ''),
+    details: str(f['Full Details'] || f['Details'], ''),
     stats: {
-      cities:  str(f['Stat: Cities'], '—'),
-      members: str(f['Stat: Members'], '—'),
-      events:  str(f['Stat: Events'], '—'),
-      status:  str(f['Stat: Timeline'], status),
+      cities:  str(f['Stat: Cities'] || f['Cities'], '—'),
+      members: str(f['Stat: Members'] || f['Members'], '—'),
+      events:  str(f['Stat: Events'] || f['Events'], '—'),
+      status:  str(f['Stat: Timeline'] || f['Timeline'], status),
     },
   }
 }
@@ -334,12 +342,12 @@ export async function getDivisions(): Promise<WGCDivision[]> {
 function mapStat(rec: AirtableRecord): WGCStat {
   const f = rec.fields
   return {
-    id:           str(f['Stat ID'], rec.id),
-    label:        str(f['Label'], 'Stat'),
-    value:        num(f['Numeric Value'], 0),
+    id:           str(f['Stat ID'] || f['ID'], rec.id),
+    label:        str(f['Label'] || f['Name'], 'Stat'),
+    value:        num(f['Numeric Value'] || f['Value'], 0),
     prefix:       str(f['Prefix'], ''),
     suffix:       str(f['Suffix'], ''),
-    displayValue: str(f['Display Value'], ''),
+    displayValue: str(f['Display Value'] || f['Display'], ''),
   }
 }
 
@@ -370,11 +378,11 @@ export interface PastEventSpotlight {
 function mapSpotlight(rec: AirtableRecord, index: number): PastEventSpotlight {
   const f = rec.fields
   // Support both single-attachment and multi-attachment fields named "Photo" or "Event Photo"
-  const imageUrl = attachmentUrl(f['Photo']) || attachmentUrl(f['Event Photo']) || ''
+  const imageUrl = attachmentUrl(f['Photo'] || f['Event Photo'] || f['Image'])
   return {
-    id:       str(f['Spotlight ID'], rec.id),
+    id:       str(f['Spotlight ID'] || f['ID'], rec.id),
     imageUrl,
-    caption:  str(f['Caption'], ''),
+    caption:  str(f['Caption'] || f['Name'], ''),
   }
 }
 
