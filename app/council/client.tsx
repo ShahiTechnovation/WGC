@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { WGC_DIVISIONS, type CouncilMember } from '@/lib/constants'
 import Link from 'next/link'
+import { NewsletterModal } from '@/components/sections/events-section'
 
 // ── Toggle true when council Airtable table has data ─────────────────────────
 const REVEALED = false
@@ -17,7 +19,7 @@ const fadeUp = (delay = 0) => ({
 })
 
 // ── Revealing Soon overlay ────────────────────────────────────────────────────
-function CouncilRevealingPage() {
+function CouncilRevealingPage({ onOpenNewsletter }: { onOpenNewsletter: () => void }) {
   return (
     <div style={{ paddingTop: '64px' }}>
 
@@ -217,9 +219,18 @@ function CouncilRevealingPage() {
             <p className="font-body text-text-secondary" style={{ fontSize: '16px', lineHeight: 1.75, marginBottom: '40px' }}>
               Whether you&apos;re a builder, organizer, or partner — the Council is looking for the best across Asia.
             </p>
-            <Link href="/apply" className="btn-primary" style={{ fontSize: '14px', padding: '14px 32px' }}>
-              APPLY TO JOIN <span>↗</span>
-            </Link>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+              <Link href="/apply" className="btn-primary" style={{ fontSize: '14px', padding: '14px 32px' }}>
+                APPLY TO JOIN <span>↗</span>
+              </Link>
+              <button
+                onClick={onOpenNewsletter}
+                className="btn-secondary"
+                style={{ fontSize: '14px', padding: '14px 32px', cursor: 'pointer', border: '1px solid var(--bg-border)', background: 'transparent', color: 'var(--text-secondary)' }}
+              >
+                REGISTER FOR UPDATES <span>→</span>
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -228,7 +239,7 @@ function CouncilRevealingPage() {
 }
 
 // ── Full council (revealed) ───────────────────────────────────────────────────
-function CouncilRevealedPage({ members, divisions }: { members: CouncilMember[], divisions: Division[] }) {
+function CouncilRevealedPage({ members, divisions, onOpenNewsletter }: { members: CouncilMember[], divisions: Division[], onOpenNewsletter: () => void }) {
   return (
     <div style={{ paddingTop: '64px' }}>
       <section style={{
@@ -344,7 +355,16 @@ function CouncilRevealedPage({ members, divisions }: { members: CouncilMember[],
             <p className="font-body text-text-secondary" style={{ fontSize: '16px', lineHeight: 1.75, marginBottom: '40px' }}>
               Whether you&apos;re a builder, organizer, or partner — the Council is looking for the best across Asia.
             </p>
-            <Link href="/apply" className="btn-primary" style={{ fontSize: '14px', padding: '14px 32px' }}>APPLY TO JOIN <span>↗</span></Link>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+              <Link href="/apply" className="btn-primary" style={{ fontSize: '14px', padding: '14px 32px' }}>APPLY TO JOIN <span>↗</span></Link>
+              <button
+                onClick={onOpenNewsletter}
+                className="btn-secondary"
+                style={{ fontSize: '14px', padding: '14px 32px', cursor: 'pointer', border: '1px solid var(--bg-border)', background: 'transparent', color: 'var(--text-secondary)' }}
+              >
+                REGISTER FOR UPDATES <span>→</span>
+              </button>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -360,7 +380,20 @@ export default function CouncilClient({
   members?: CouncilMember[]
   divisions?: Division[]
 }) {
-  return REVEALED
-    ? <CouncilRevealedPage members={members} divisions={divisions} />
-    : <CouncilRevealingPage />
+  const [isNewsletterOpen, setIsNewsletterOpen] = useState(false)
+
+  return (
+    <>
+      {REVEALED ? (
+        <CouncilRevealedPage
+          members={members}
+          divisions={divisions}
+          onOpenNewsletter={() => setIsNewsletterOpen(true)}
+        />
+      ) : (
+        <CouncilRevealingPage onOpenNewsletter={() => setIsNewsletterOpen(true)} />
+      )}
+      <NewsletterModal isOpen={isNewsletterOpen} onClose={() => setIsNewsletterOpen(false)} />
+    </>
+  )
 }

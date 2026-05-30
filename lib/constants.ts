@@ -54,7 +54,7 @@ export const PRINCIPLES = [
   {
     number: '03',
     title: 'DOMINATE',
-    description: 'Nov 19 2026. GTA 6 launch day. Asia ready. The biggest stage.',
+    description: 'August 2026. GTA 6 launch day. Asia ready. The biggest stage.',
   },
 ] as const
 
@@ -104,8 +104,8 @@ export const EVENTS_ROADMAP: WGCEvent[] = [
     id: 'flagship',
     title: 'WGC HACKATHON 2026',
     city: 'Pan-Asia',
-    date: '19 Nov 2026',
-    month: 'NOV',
+    date: '19 Aug 2026',
+    month: 'AUG',
     status: 'CONFIRMED',
     flagship: true,
     description: "Asia's Biggest Gaming Hackathon",
@@ -212,7 +212,7 @@ export const PARTNER_BENEFITS = [
   'Priority placement in WGC media coverage',
 ] as const
 
-export const TICKER_TEXT = "WORLD GAMING COUNCIL  ◆  ASIA  ◆  20+ CITIES  ◆  NOVEMBER 2026  ◆  THE GAME CHANGES HERE  ◆  HACKATHONS  ◆  BUILDERS  ◆  WGC"
+export const TICKER_TEXT = "WORLD GAMING COUNCIL  ◆  ASIA  ◆  20+ CITIES  ◆  AUGUST 2026  ◆  THE GAME CHANGES HERE  ◆  HACKATHONS  ◆  BUILDERS  ◆  WGC"
 
 export const PRESS_CONTACT = {
   email: 'council@wgc.global',
@@ -234,7 +234,7 @@ export interface NewsPost {
 }
 
 export const NEWS_POSTS: NewsPost[] = [
-  { _id: '1', title: 'WGC Announces 2026 Pan-Asia Hackathon Schedule', slug: 'pan-asia-hackathon-schedule', category: 'Announcement', publishedAt: '2026-05-01', author: 'WGC Team', excerpt: 'The complete roadmap for 2026 is here — 30+ events across 20+ cities, culminating in the November flagship.' },
+  { _id: '1', title: 'WGC Announces 2026 Pan-Asia Hackathon Schedule', slug: 'pan-asia-hackathon-schedule', category: 'Announcement', publishedAt: '2026-05-01', author: 'WGC Team', excerpt: 'The complete roadmap for 2026 is here — 30+ events across 20+ cities, culminating in the August flagship.' },
   { _id: '2', title: 'Seoul Qualifier Draws Record Applications', slug: 'seoul-qualifier-record', category: 'News', publishedAt: '2026-04-28', author: 'Min-Jun Park', excerpt: 'Over 1,200 builders applied for the Seoul qualifier, making it the most competitive WGC event to date.' },
   { _id: '3', title: 'HyperConnect Joins as Title Partner', slug: 'hyperconnect-title-partner', category: 'Partnership', publishedAt: '2026-04-20', author: 'Sarah Al-Rashid', excerpt: 'HyperConnect becomes WGC\'s newest title partner, bringing connectivity infrastructure across Southeast Asia.' },
   { _id: '4', title: 'WGC Standards Framework v1.0 Released', slug: 'standards-framework-v1', category: 'Announcement', publishedAt: '2026-04-15', author: 'Arjun Kapoor', excerpt: 'The first version of WGC\'s competitive standards framework is now live, covering event organization, judging, and prize distribution.' },

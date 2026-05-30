@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import { NewsletterModal } from '@/components/sections/events-section'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -11,6 +13,7 @@ const fadeUp = (delay = 0) => ({
 })
 
 export function FinaleCTASection({ stats: _stats }: { stats?: unknown[] } = {}) {
+  const [isNewsletterOpen, setIsNewsletterOpen] = useState(false)
   return (
     <section
       id="finale-cta"
@@ -67,10 +70,18 @@ export function FinaleCTASection({ stats: _stats }: { stats?: unknown[] } = {}) 
               <Link href="/apply" className="btn-primary" style={{ fontSize: '13px', padding: '14px 28px' }}>
                 APPLY TO JOIN WGC <span>↗</span>
               </Link>
+              <button
+                onClick={() => setIsNewsletterOpen(true)}
+                className="btn-secondary"
+                style={{ fontSize: '13px', padding: '14px 28px', cursor: 'pointer', border: '1px solid var(--bg-border)', background: 'transparent', color: 'var(--text-secondary)' }}
+              >
+                REGISTER FOR UPDATES <span>→</span>
+              </button>
               <Link href="/partners" className="btn-secondary" style={{ fontSize: '13px', padding: '14px 28px' }}>
                 PARTNER WITH US <span>→</span>
               </Link>
             </div>
+            <NewsletterModal isOpen={isNewsletterOpen} onClose={() => setIsNewsletterOpen(false)} />
           </motion.div>
         </div>
 

@@ -8,7 +8,7 @@ import { NAV_LINKS, SOCIAL_LINKS, WGC_BRAND } from '@/lib/constants'
 const MILESTONES = [
   { val: '30+', label: 'Events 2026' },
   { val: '12+', label: 'Nations' },
-  { val: 'NOV 19', label: 'Grand Finale' },
+  { val: 'AUGUST', label: 'Grand Finale' },
   { val: '₹1CR+', label: 'Prize Pool' },
 ]
 
@@ -17,11 +17,24 @@ export function Footer() {
   const [submitted, setSubmitted] = useState(false)
   const currentYear = new Date().getFullYear()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
-    setEmail('')
-    setTimeout(() => setSubmitted(false), 3000)
+    if (!email) return
+
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (res.ok) {
+        setSubmitted(true)
+        setEmail('')
+        setTimeout(() => setSubmitted(false), 3000)
+      }
+    } catch (err) {
+      console.error('Footer newsletter submission failed:', err)
+    }
   }
 
   return (

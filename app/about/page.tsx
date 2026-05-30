@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { WGC_BRAND, PRINCIPLES, WGC_DIVISIONS } from '@/lib/constants'
+import { NewsletterModal } from '@/components/sections/events-section'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -12,6 +14,7 @@ const fadeUp = (delay = 0) => ({
 })
 
 export default function AboutPage() {
+  const [isNewsletterOpen, setIsNewsletterOpen] = useState(false)
   return (
     <div style={{ paddingTop: '64px' }}>
 
@@ -305,9 +308,19 @@ export default function AboutPage() {
             <p className="font-body text-text-secondary" style={{ fontSize: '16px', lineHeight: 1.75, marginBottom: '40px' }}>
               Whether you&apos;re a builder, organizer, or brand — there&apos;s a place for you in WGC.
             </p>
-            <Link href="/apply" className="btn-primary" style={{ fontSize: '14px', padding: '14px 32px' }}>
-              APPLY TO JOIN <span>↗</span>
-            </Link>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+              <Link href="/apply" className="btn-primary" style={{ fontSize: '14px', padding: '14px 32px' }}>
+                APPLY TO JOIN <span>↗</span>
+              </Link>
+              <button
+                onClick={() => setIsNewsletterOpen(true)}
+                className="btn-secondary"
+                style={{ fontSize: '14px', padding: '14px 32px', cursor: 'pointer', border: '1px solid var(--bg-border)', background: 'transparent', color: 'var(--text-secondary)' }}
+              >
+                REGISTER FOR UPDATES <span>→</span>
+              </button>
+            </div>
+            <NewsletterModal isOpen={isNewsletterOpen} onClose={() => setIsNewsletterOpen(false)} />
           </motion.div>
         </div>
       </section>

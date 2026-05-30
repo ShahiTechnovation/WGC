@@ -261,7 +261,7 @@ export function MapSection({ cities }: MapSectionProps) {
               { val: `${displayCities.length}+`, label: 'Cities' },
               { val: '12+',   label: 'Nations' },
               { val: 'Asia',  label: 'Wide' },
-              { val: 'Nov 19', label: '2026' },
+              { val: 'August', label: '2026' },
             ].map((s, i) => (
               <div
                 key={s.label}
