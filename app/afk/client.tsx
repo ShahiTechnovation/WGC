@@ -75,7 +75,6 @@ const SPONSOR_FEATURES = [
   { name: 'Ads on Screen on Venue', tiers: [true, true, false, false, false] },
   { name: 'Setup Booths on the venue', tiers: [true, true, false, false, false] },
   { name: '15 Min Slot During the Ceremony', tiers: [true, false, false, false, false] },
-  { name: 'Participants Data', tiers: [true, false, false, false, false] },
   { name: 'Include Powered By alongside hackathon', tiers: [true, false, false, false, false] }
 ]
 
@@ -225,7 +224,7 @@ function PartnerTree() {
     <div style={{ position: 'relative', padding: '40px 0', marginTop: '40px', overflowX: 'auto' }}>
       {/* Grid layout for Desktop (5 columns, 3 rows) */}
       <div className="hidden md:grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', gap: '0 24px', minWidth: '960px' }}>
-        
+
         {/* Row 1: Top Row Cards */}
         {/* Col 1: Card 1 */}
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }}>
