@@ -19,6 +19,24 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const [mainDomain, setMainDomain] = useState('')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.host
+      if (host.startsWith('afk.')) {
+        const mainHost = host.replace(/^afk\./, '')
+        setMainDomain(`${window.location.protocol}//${mainHost}`)
+      }
+    }
+  }, [])
+
+  const getLinkHref = (href: string) => {
+    if (mainDomain && href.startsWith('/')) {
+      return `${mainDomain}${href}`
+    }
+    return href
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,7 +70,7 @@ export function Navbar() {
         <div className="max-w-7xl w-full mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-full">
             {/* LEFT: Logo */}
-            <Link href="/" className="flex items-center group">
+            <Link href={getLinkHref('/')} className="flex items-center group">
               <Image
                 src="/image.png"
                 alt="World Gaming Council"
@@ -71,7 +89,7 @@ export function Navbar() {
                 return (
                   <Link
                     key={item.label}
-                    href={item.href}
+                    href={getLinkHref(item.href)}
                     className={`relative font-body font-medium text-[14px] transition-colors duration-300 group ${
                       isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
@@ -91,7 +109,7 @@ export function Navbar() {
             {/* RIGHT: Apply Button & Mobile Menu Toggle */}
             <div className="flex items-center gap-4">
               <Link
-                href="/apply"
+                href={getLinkHref('/apply')}
                 className="hidden md:flex items-center justify-center border border-[var(--lime-dim)] text-[var(--lime)] font-body font-medium text-[13px] px-5 py-2 hover:bg-[var(--lime)] hover:text-[var(--text-inverse)] hover:glow-lime transition-all duration-200"
               >
                 APPLY TO JOIN ↗
@@ -146,7 +164,7 @@ export function Navbar() {
                   transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <Link
-                    href={item.href}
+                    href={getLinkHref(item.href)}
                     className="font-playfair text-[48px] font-bold text-[var(--text-primary)] hover:text-[var(--lime)] transition-colors inline-block"
                     onClick={() => setIsOpen(false)}
                   >
@@ -163,7 +181,7 @@ export function Navbar() {
                 className="mt-8"
               >
                 <Link
-                  href="/apply"
+                  href={getLinkHref('/apply')}
                   className="inline-flex items-center justify-center border border-[var(--lime-dim)] text-[var(--lime)] font-body font-medium text-[16px] px-8 py-4 hover:bg-[var(--lime)] hover:text-[var(--text-inverse)] hover:glow-lime transition-all duration-200"
                   onClick={() => setIsOpen(false)}
                 >

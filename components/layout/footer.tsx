@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NAV_LINKS, SOCIAL_LINKS, WGC_BRAND } from '@/lib/constants'
 
 const MILESTONES = [
@@ -16,6 +16,24 @@ export function Footer() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const currentYear = new Date().getFullYear()
+  const [mainDomain, setMainDomain] = useState('')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = window.location.host
+      if (host.startsWith('afk.')) {
+        const mainHost = host.replace(/^afk\./, '')
+        setMainDomain(`${window.location.protocol}//${mainHost}`)
+      }
+    }
+  }, [])
+
+  const getLinkHref = (href: string) => {
+    if (mainDomain && href.startsWith('/')) {
+      return `${mainDomain}${href}`
+    }
+    return href
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,7 +77,7 @@ export function Footer() {
           }}>
             {/* Left: Logo + Wordmark */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <Link href="/" style={{ display: 'block', flexShrink: 0 }}>
+              <Link href={getLinkHref('/')} style={{ display: 'block', flexShrink: 0 }}>
                 <Image
                   src="/image.png"
                   alt="World Gaming Council"
@@ -127,7 +145,7 @@ export function Footer() {
                 {[...NAV_LINKS, { label: 'Apply', href: '/apply' }].map(item => (
                   <li key={item.href}>
                     <Link
-                      href={item.href}
+                      href={getLinkHref(item.href)}
                       className="font-body text-text-secondary"
                       style={{
                         fontSize: '14px',

@@ -16,9 +16,9 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <CustomCursor />
-      {!isAfkPage && <Navbar />}
+      <Navbar />
       <main>{children}</main>
-      {!isAfkPage && <Footer />}
+      <Footer />
     </>
   )
 }
