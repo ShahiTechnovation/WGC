@@ -24,7 +24,7 @@ import {
 const BASE_ID = process.env.AIRTABLE_BASE_ID!
 const TOKEN   = process.env.AIRTABLE_API_TOKEN!
 const BASEROW_TOKEN = process.env.BASEROW_API_TOKEN!
-const REVALIDATE = 0 // Always fetch fresh — no cache
+const REVALIDATE = 300 // Cache for 5 minutes (Next.js ISR)
 
 // ── Types ──────────────────────────────────────────────
 
@@ -88,7 +88,7 @@ async function fetchBaserowTable(tableName: string): Promise<AirtableRecord[]> {
   try {
     const res = await fetch(url, {
       headers: { Authorization: `Token ${BASEROW_TOKEN}` },
-      cache: 'no-store',
+      next: { revalidate: REVALIDATE },
     })
 
     if (!res.ok) {
@@ -167,7 +167,7 @@ async function fetchTable(
   try {
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${TOKEN}` },
-      cache: 'no-store',
+      next: { revalidate: REVALIDATE },
     })
 
     if (!res.ok) {
