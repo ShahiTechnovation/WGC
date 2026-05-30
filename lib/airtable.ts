@@ -23,6 +23,7 @@ import {
 // ── Config ─────────────────────────────────────────────
 const BASE_ID = process.env.AIRTABLE_BASE_ID!
 const TOKEN   = process.env.AIRTABLE_API_TOKEN!
+const BASEROW_TOKEN = process.env.BASEROW_API_TOKEN!
 const REVALIDATE = 0 // Always fetch fresh — no cache
 
 // ── Types ──────────────────────────────────────────────
@@ -66,12 +67,92 @@ interface AirtableRecord {
   fields: Record<string, unknown>
 }
 
+const BASEROW_TABLE_MAP: Record<string, string> = {
+  'Events': '1002120',
+  'Council Members': '1002121',
+  'Partners': '1002122',
+  'News & Announcements': '1002123',
+  'Cities / Regions': '1002124',
+  'WGC Divisions': '1002125',
+  'Site Stats': '1002126',
+  'Applications': '1002127',
+  'Past Event Spotlights': '1002128'
+}
+
+async function fetchBaserowTable(tableName: string): Promise<AirtableRecord[]> {
+  if (!BASEROW_TOKEN) return []
+  const tableId = BASEROW_TABLE_MAP[tableName]
+  if (!tableId) return []
+
+  const url = `https://api.baserow.io/api/database/rows/table/${tableId}/?user_field_names=true&size=200`
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Token ${BASEROW_TOKEN}` },
+      cache: 'no-store',
+    })
+
+    if (!res.ok) {
+      throw new Error(`Baserow fetch failed with status ${res.status}`)
+    }
+
+    const data = await res.json()
+    return (data.results || []).map((row: any) => {
+      const { id, order, ...fields } = row
+      return { id: String(id), fields }
+    })
+  } catch (err) {
+    console.error(`[Baserow Error] Network error for ${tableName}:`, err)
+    throw err
+  }
+}
+
 async function fetchTable(
   tableName: string,
   params: Record<string, string> = {},
   sortField?: string,
   isRetry = false
 ): Promise<AirtableRecord[]> {
+  // 1. Try Baserow First
+  try {
+    if (BASEROW_TOKEN) {
+      let baserowRecords = await fetchBaserowTable(tableName);
+      if (baserowRecords.length > 0) {
+        console.log(`[Baserow] Successfully fetched ${tableName} from Baserow.`);
+        
+        // Handle basic filtering usually done by Airtable params
+        if (params['filterByFormula']) {
+          const formula = params['filterByFormula'];
+          if (formula.includes('{Is Active}=1')) {
+            baserowRecords = baserowRecords.filter(r => r.fields['Is Active'] === true || r.fields['Is Active'] === '1' || r.fields['Is Active'] === 1);
+          }
+          if (formula.includes('{Is Published}=1')) {
+            baserowRecords = baserowRecords.filter(r => r.fields['Is Published'] === true || r.fields['Is Published'] === '1' || r.fields['Is Published'] === 1);
+          }
+          if (formula.includes('{Is Featured}=1')) {
+            baserowRecords = baserowRecords.filter(r => r.fields['Is Featured'] === true || r.fields['Is Featured'] === '1' || r.fields['Is Featured'] === 1);
+          }
+        }
+
+        // Handle basic sorting
+        if (sortField) {
+          baserowRecords.sort((a, b) => {
+            const valA = a.fields[sortField] as any;
+            const valB = b.fields[sortField] as any;
+            if (valA == null) return 1;
+            if (valB == null) return -1;
+            const direction = params['sort[0][direction]'] === 'desc' ? -1 : 1;
+            return valA > valB ? direction : valA < valB ? -direction : 0;
+          });
+        }
+
+        return baserowRecords;
+      }
+    }
+  } catch (err) {
+    console.warn(`[Baserow] Failed to fetch ${tableName}, falling back to Airtable...`);
+  }
+
+  // 2. Fallback to Airtable
   if (!BASE_ID || !TOKEN) return []
 
   const baseParams: Record<string, string> = { ...params }
@@ -115,6 +196,9 @@ async function fetchTable(
 
 function str(v: unknown, fallback = ''): string {
   if (v == null) return fallback
+  if (typeof v === 'object' && !Array.isArray(v) && v !== null && 'value' in v) {
+    return String((v as any).value)
+  }
   return String(v)
 }
 
@@ -223,7 +307,7 @@ function mapPartner(rec: AirtableRecord): Partner {
 
   // Social link: try full URL fields first, then handle field
   const socialUrl =
-    str(f['Social Link'] || f['Social URL'] || f['Website'] || f['Social Handle'] || f['URL'])
+    str(f['Social Link'] || f['Social URL'] || f['Website'] || f['Website URL'] || f['Social Handle'] || f['URL'])
 
   return {
     id:        str(f['Partner ID'] || f['ID'], rec.id),
@@ -408,6 +492,37 @@ export async function submitApplication(data: {
   country: string
   message: string
 }): Promise<{ success: boolean; error?: string }> {
+  // 1. Try Baserow First
+  if (BASEROW_TOKEN && BASEROW_TABLE_MAP['Applications']) {
+    try {
+      const tableId = BASEROW_TABLE_MAP['Applications'];
+      const res = await fetch(`https://api.baserow.io/api/database/rows/table/${tableId}/?user_field_names=true`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Token ${BASEROW_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          'Full Name':        data.name,
+          'Email':            data.email,
+          'Organization':     data.organization,
+          'Role / Title':     data.role,
+          'Application Type': data.type,
+          'City':             data.city,
+          'Country':          data.country,
+          'Message':          data.message,
+          'Status':           'New',
+          'Source':           'Website',
+        }),
+      });
+      if (res.ok) return { success: true };
+      console.warn('[Baserow] Submit failed, falling back to Airtable');
+    } catch (err) {
+      console.warn('[Baserow] Submit error, falling back to Airtable', err);
+    }
+  }
+
+  // 2. Fallback to Airtable
   if (!BASE_ID || !TOKEN) return { success: false, error: 'Not configured' }
 
   try {
